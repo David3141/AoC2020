@@ -1,12 +1,14 @@
 module Day05 (part1, part2) where
 
+import Data.List (sort)
+
 import Paths_advent_of_code
 
 part1 :: IO Int
 part1 = maximum . map seatId <$> readPasses
 
 part2 :: IO Int
-part2 = return 5
+part2 = missingSeatId . map seatId <$> readPasses
 
 readPasses :: IO [String]
 readPasses = lines <$> (readFile =<< getDataFileName "inputs/day05.txt")
@@ -22,6 +24,16 @@ seatId str = row * 8 + column
     where
         row = parseRow . take 7 $str
         column = parseColumn . drop 7 $ str
+
+-- We know that the searched seat has direct neighbors. So to find it,
+-- we need to sort all IDs and find an occurence of x followed by x + 2.
+-- Then our seat is x + 1.
+missingSeatId :: [Int] -> Int
+missingSeatId seatIds = missingSeatId' (sort seatIds)
+    where
+    missingSeatId' (x:y:rest) = if y - x == 2
+        then x + 1
+        else missingSeatId' (y:rest)
 
 binaryPartition :: (Int, Int) -> (Char, Char) -> String -> Int
 binaryPartition (min, max) (lowerChar, upperChar) str =
