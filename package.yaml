@@ -25,6 +25,7 @@ dependencies:
 - split
 - timeit
 - transformers
+- regex-applicative
 
 library:
   source-dirs: src
