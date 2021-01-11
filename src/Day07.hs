@@ -19,7 +19,7 @@ part1 :: IO Int
 part1 = countBagsContainingColor <$> readRules
 
 part2 :: IO Int
-part2 = return 7
+part2 = countNumOfContainedBags "shiny gold" <$> readRules
 
 readRules :: IO OuterBags
 readRules = M.fromList . map parseBag . lines <$> (readFile =<< getDataFileName "inputs/day07.txt")
@@ -52,14 +52,10 @@ containsColor ((currentColor,_):rest) outerBags =
     where
         lookupOtherBags = fromMaybe [] (M.lookup currentColor outerBags)
 
--- parseRule :: RE Char ColorMap
--- parseRule
-
--- dotted crimson bags contain 4 wavy beige bags.
--- dull bronze bags contain 2 muted white bags, 2 faded orange bags, 1 plaid blue bag.
--- dull crimson bags contain 5 pale black bags, 5 dim lime bags, 5 clear lavender bags, 4 faded orange bags.
--- striped red bags contain 3 shiny maroon bags, 5 muted yellow bags, 2 faded lavender bags, 2 dark olive bags.
--- clear magenta bags contain 4 dark coral bags.
-
--- s = "dotted crimson bags contain 4 wavy beige bags."
--- s =~ pContents
+countNumOfContainedBags :: Color -> OuterBags -> Int
+countNumOfContainedBags color outerBags = foldl
+    (\acc (key, val) -> acc + val + val * countNumOfContainedBags key outerBags)
+    0
+    innerBags
+    where
+        innerBags = fromMaybe [] (M.lookup color outerBags)
