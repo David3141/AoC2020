@@ -1,10 +1,6 @@
-module Day01
-    ( part1
-    , part2
-    )
-where
+module Day01 (part1, part2) where
 
-import           Helpers                        ( readInts )
+import Helpers (readInts)
 
 part1 :: IO Int
 part1 = do

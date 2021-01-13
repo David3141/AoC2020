@@ -1,48 +1,31 @@
-module Day02
-    ( part1
-    , part2
-    )
-where
+{-# LANGUAGE ViewPatterns #-}
 
-import           Data.List.Split                ( splitOn )
+module Day02 (part1, part2) where
 
-import           Helpers                        ( readInts )
-
-import           Paths_advent_of_code
+import Helpers (readInts)
+import Data.List.Split (splitOn, wordsBy)
+import Paths_advent_of_code
 
 part1 :: IO Int
-part1 = countElem True . map passwordMatchesOldRule <$> input
+part1 = length . filter matchesOldRule <$> input
 
 part2 :: IO Int
-part2 = countElem True . map passwordMatchesNewRule <$> input
+part2 = length . filter matchesNewRule <$> input
 
-input :: IO [String]
-input = lines <$> (readFile =<< getDataFileName "inputs/day02.txt")
+input :: IO [(Int, Int, Char, String)]
+input = map parse . lines <$> (readFile =<< getDataFileName "inputs/day02.txt")
 
+parse :: String -> (Int, Int, Char, String)
+parse line = (min, max, char, pw)
+  where [read -> min, read -> max, [char], pw] = wordsBy (`elem` " -:") line
 
-passwordMatchesOldRule :: String -> Bool
-passwordMatchesOldRule ruleAndPassword =
-    minCount <= actualCount && actualCount <= maxCount
-  where
-    (rule     : password   : _) = splitOn ": " ruleAndPassword
-    (counts   : (char : _) : _) = splitOn " " rule
-    (minCount : maxCount   : _) = map read $ splitOn "-" counts :: [Int]
-    actualCount                 = countElem char password
+matchesOldRule :: (Int, Int, Char, String) -> Bool
+matchesOldRule (min, max, char, pw) = min <= actualCount && actualCount <= max
+  where actualCount = length . filter (== char) $ pw
 
-
-passwordMatchesNewRule :: String -> Bool
-passwordMatchesNewRule ruleAndPassword =
-    (charIsAtFirstPos && not charIsAtSecondPos)
-        || (not charIsAtFirstPos && charIsAtSecondPos)
-  where
-    (rule   : password   : _) = splitOn ": " ruleAndPassword
-    (counts : (char : _) : _) = splitOn " " rule
-    (firstIndex : secondIndex : _) =
-        map (pred . read) . splitOn "-" $ counts :: [Int]
-
-    charIsAtFirstPos  = password !! firstIndex == char
-    charIsAtSecondPos = password !! secondIndex == char
-
-
-countElem :: Eq a => a -> [a] -> Int
-countElem x = length . filter (== x)
+matchesNewRule :: (Int, Int, Char, String) -> Bool
+matchesNewRule (first, second, char, pw) = (== 1)
+  . length
+  . filter (== char)
+  . map ((!!) pw . pred)
+  $ [first, second]
