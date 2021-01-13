@@ -18,16 +18,16 @@ seatId = parseAsBinary
 
 parseAsBinary :: String -> Int
 parseAsBinary =
-    foldl (\acc c -> if countsAsOne c then acc * 2 + 1 else acc * 2) 0
+  foldl (\acc c -> if countsAsOne c then acc * 2 + 1 else acc * 2) 0
     where
-        countsAsOne c = c `elem` "BR"
+    countsAsOne c = c `elem` "BR"
 
 -- We know that the searched seat has direct neighbors. So to find it,
 -- we need to sort all IDs and find an occurence of x followed by x + 2.
 -- Then our seat is x + 1.
 missingSeatId :: [Int] -> Int
 missingSeatId seatIds = missingSeatId' (sort seatIds)
-    where
-    missingSeatId' (x:y:rest) = if y - x == 2
-        then x + 1
-        else missingSeatId' (y:rest)
+  where
+  missingSeatId' (x:y:rest)
+    | y - x == 2 = x + 1
+    | otherwise = missingSeatId' (y:rest)

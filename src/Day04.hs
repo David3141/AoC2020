@@ -4,12 +4,10 @@ module Day04 (part1, part2) where
 
 import Control.Monad (replicateM)
 import Data.Maybe (fromMaybe, isJust)
-import Data.Char (isAlphaNum, isDigit)
+import Data.Char (isDigit)
 import Data.Foldable (asum)
-import Data.List (delete, groupBy)
 import Data.List.Split (splitOn)
 import Paths_advent_of_code
-import Text.Read (readMaybe)
 import Text.Regex.Applicative
 import qualified Data.Map.Strict as M
 
@@ -20,65 +18,69 @@ data Height = Cm Int
             deriving Show
 
 part1 :: IO Int
-part1 = countBy hasAllRequiredEntries <$> readPassports
-    where
-        hasAllRequiredEntries :: Passport -> Bool
-        hasAllRequiredEntries passport =
-            all (`M.member` passport) requiredEntry
-
-        requiredEntry = ["byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid"]
+part1 = length . filter hasAllRequiredEntries <$> readPassports
+  where
+    hasAllRequiredEntries :: Passport -> Bool
+    hasAllRequiredEntries passport = all
+      (`M.member` passport)
+      ["byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid"]
 
 part2 :: IO Int
-part2 = countBy allRequiredKeysAreValid <$> readPassports
-    where
-        allRequiredKeysAreValid :: Passport -> Bool
-        allRequiredKeysAreValid passport = all (== True)
-            [ memberMatchesCondition "byr" byr passport
-            , memberMatchesCondition "iyr" iyr passport
-            , memberMatchesCondition "eyr" eyr passport
-            , memberMatchesCondition "hgt" hgt passport
-            , memberMatchesCondition "hcl" hcl passport
-            , memberMatchesCondition "ecl" ecl passport
-            , memberMatchesCondition "pid" pid passport
-            ]
+part2 = length . filter allRequiredKeysAreValid <$> readPassports
+  where
+    allRequiredKeysAreValid :: Passport -> Bool
+    allRequiredKeysAreValid passport =
+      all ((== True) . checkRule passport) rules
 
-        byr = parseAndCheck int (between 1920 2002)
-        iyr = parseAndCheck int (between 2010 2020)
-        eyr = parseAndCheck int (between 2020 2030)
-        hgt = parseAndCheck parseHeight (\case Cm val -> between 150 193 val
-                                               In val -> between 59 76 val)
-        hcl = matchesRegex parseHcl
-        ecl = matchesRegex parseEcl
-        pid = matchesRegex (replicateM 9 $ psym isDigit)
+    checkRule :: Passport -> (String, String -> Bool) -> Bool
+    checkRule passport (key, rule) = maybe False rule passportValue
+      where passportValue = M.lookup key passport
 
+rules :: [(String, String -> Bool)]
+rules =
+  [ ("byr", parseAndCheck parseInt (\x -> x >= 1920 && x <= 2002))
+  , ("iyr", parseAndCheck parseInt (\x -> x >= 2010 && x <= 2020))
+  , ("eyr", parseAndCheck parseInt (\x -> x >= 2020 && x <= 2030))
+  , ("hgt", parseAndCheck parseHeight validateHeight)
+  , ("hcl", matchesRegex parseHcl)
+  , ("ecl", matchesRegex parseEcl)
+  , ("pid", matchesRegex (replicateM 9 $ psym isDigit))
+  ]
+  where
+    parseAndCheck :: RE Char a -> (a -> Bool) -> String -> Bool
+    parseAndCheck re cond = maybe False cond . match re
 
+    parseInt :: RE Char Int
+    parseInt = read <$> many (psym isDigit)
 
-parseHeight :: RE Char Height
-parseHeight = parseCm <|> parseInches
-    where
-        parseCm = Cm <$> int <* string "cm"
-        parseInches = In <$> int <* string "in"
+    parseHeight :: RE Char Height
+    parseHeight = parseCm <|> parseInches
+        where
+            parseCm = Cm <$> parseInt <* string "cm"
+            parseInches = In <$> parseInt <* string "in"
 
-parseHcl :: RE Char String
-parseHcl = sym '#' *> replicateM 6 (anySymOf "0123456789abcdef")
+    validateHeight :: Height -> Bool
+    validateHeight (Cm val) = val >= 150 && val <= 193
+    validateHeight (In val) = val >= 59 && val <= 76
 
-parseEcl :: RE Char String
-parseEcl = string "amb"
-    <|> string "blu"
-    <|> string "brn"
-    <|> string "gry"
-    <|> string "grn"
-    <|> string "hzl"
-    <|> string "oth"
+    parseHcl :: RE Char String
+    parseHcl = sym '#' *> replicateM 6 (anySymOf "0123456789abcdef")
+      where
+      anySymOf :: String -> RE Char Char
+      anySymOf = asum . map sym
 
-anySymOf :: String -> RE Char Char
-anySymOf = asum . map sym
+    parseEcl :: RE Char String
+    parseEcl = string "amb"
+        <|> string "blu"
+        <|> string "brn"
+        <|> string "gry"
+        <|> string "grn"
+        <|> string "hzl"
+        <|> string "oth"
 
-between :: Int -> Int -> Int -> Bool
-between lo hi val = val >= lo && val <= hi
+    matchesRegex :: RE Char a -> String -> Bool
+    matchesRegex re = isJust . match re
 
-regexRule :: RE Char a -> (String -> Bool)
-regexRule re = isJust . match re
 
 readPassports :: IO [Passport]
 readPassports =
@@ -95,25 +97,3 @@ parsePassport = M.fromList . fromMaybe [] . match passport
         whitespace = many (psym isWhitespace)
         nonWhitespace = many (psym (not . isWhitespace))
         isWhitespace = (`elem` " \n\t")
-
-
-parseAndCheck :: RE Char a -> (a -> Bool) -> String -> Bool
-parseAndCheck re cond = maybe False cond . match re
-
-matchesRegex :: RE Char a -> String -> Bool
-matchesRegex re = isJust . match re
-
-int :: RE Char Int
-int = read <$> many (psym isDigit)
-
-countBy :: (a -> Bool) -> [a] -> Int
-countBy cond [] = 0
-countBy cond (x : xs)
-  | cond x = countBy cond xs + 1
-  | otherwise = countBy cond xs
-
-memberMatchesCondition :: String -> (String -> Bool) -> Passport -> Bool
-memberMatchesCondition key cond passport =
-    case M.lookup key passport of
-        Nothing -> False
-        Just value -> cond value

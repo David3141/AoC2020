@@ -29,33 +29,33 @@ parseBag = fromJust . match parseRule
 
 parseRule :: RE Char OuterBag
 parseRule = (,) <$> mainColor <*> many innerBag
-    where
-    mainColor = many anySym <* string " bags contain" <* noBags
-    innerBag = swap <$> ((,) <$> count <*> color)
-    count = read <$> (sym ' ' *> some (psym isDigit) <* sym ' ')
-    color = few anySym <* string " bag" <* few anySym
-    noBags = few (string " no other bags.")
+  where
+  mainColor = many anySym <* string " bags contain" <* noBags
+  innerBag = swap <$> ((,) <$> count <*> color)
+  count = read <$> (sym ' ' *> some (psym isDigit) <* sym ' ')
+  color = few anySym <* string " bag" <* few anySym
+  noBags = few (string " no other bags.")
 
 countBagsContainingColor :: OuterBags -> Int
 countBagsContainingColor outerBags = length $
-    M.foldlWithKey
-        (\acc key val -> if containsColor val outerBags then key:acc else acc)
-        []
-        outerBags
+  M.foldlWithKey
+    (\acc key val -> if containsColor val outerBags then key:acc else acc)
+    []
+    outerBags
 
 containsColor :: [(Color, Int)] -> OuterBags -> Bool
 containsColor [] _ = False
 containsColor ((currentColor,_):rest) outerBags =
-    (currentColor == "shiny gold")
-    || containsColor lookupOtherBags outerBags
-    || containsColor rest outerBags
+  (currentColor == "shiny gold")
+  || containsColor lookupOtherBags outerBags
+  || containsColor rest outerBags
     where
-        lookupOtherBags = fromMaybe [] (M.lookup currentColor outerBags)
+    lookupOtherBags = fromMaybe [] (M.lookup currentColor outerBags)
 
 countNumOfContainedBags :: Color -> OuterBags -> Int
 countNumOfContainedBags color outerBags = foldl
-    (\acc (key, val) -> acc + val + val * countNumOfContainedBags key outerBags)
-    0
-    innerBags
+  (\acc (key, val) -> acc + val + val * countNumOfContainedBags key outerBags)
+  0
+  innerBags
     where
-        innerBags = fromMaybe [] (M.lookup color outerBags)
+    innerBags = fromMaybe [] (M.lookup color outerBags)
