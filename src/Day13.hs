@@ -21,8 +21,22 @@ part1 = do
 
 
 part2 :: IO Int
-part2 = return 13
+part2 = do
+  (_, buses) <- input
 
+  let ((_, firstBus) : offsets) =
+        map (read <$>) . filter ((/= "x") . snd) . zip [0 ..] $ buses
+
+  return $ solve2 firstBus 0 offsets
+
+
+-- All buses are primes. Therefore we can increase stepSize by (* bus),
+-- because the lowest common multiple of two primes is their product.
+solve2 :: Int -> Int -> [(Int, Int)] -> Int
+solve2 _ timestamp [] = timestamp
+solve2 stepSize timestamp ((offset, bus):rest)
+  | (timestamp + offset) `rem` bus == 0 = solve2 (stepSize * bus) timestamp rest
+  | otherwise = solve2 stepSize (timestamp + stepSize) ((offset, bus):rest)
 
 
 input :: IO (Int, [String])
