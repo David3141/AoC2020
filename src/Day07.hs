@@ -12,22 +12,22 @@ import Data.List.Split (splitOn)
 import Paths_advent_of_code
 
 type Color = String
-type OuterBag = (Color, [(Color, Int)])
-type OuterBags = M.Map Color [(Color, Int)]
+type BagRule = (Color, [(Color, Int)])
+type BagRules = M.Map Color [(Color, Int)]
 
 part1 :: IO Int
-part1 = countBagsContainingColor <$> readRules
+part1 = countBagsContainingShinyGold <$> readRules
 
 part2 :: IO Int
 part2 = countNumOfContainedBags "shiny gold" <$> readRules
 
-readRules :: IO OuterBags
+readRules :: IO BagRules
 readRules = M.fromList . map parseBag . lines <$> (readFile =<< getDataFileName "inputs/day07.txt")
 
-parseBag :: String -> OuterBag
+parseBag :: String -> BagRule
 parseBag = fromJust . match parseRule
 
-parseRule :: RE Char OuterBag
+parseRule :: RE Char BagRule
 parseRule = (,) <$> mainColor <*> many innerBag
   where
   mainColor = many anySym <* string " bags contain" <* noBags
@@ -36,26 +36,26 @@ parseRule = (,) <$> mainColor <*> many innerBag
   color = few anySym <* string " bag" <* few anySym
   noBags = few (string " no other bags.")
 
-countBagsContainingColor :: OuterBags -> Int
-countBagsContainingColor outerBags = length $
+countBagsContainingShinyGold :: BagRules -> Int
+countBagsContainingShinyGold bagRules = length $
   M.foldlWithKey
-    (\acc key val -> if containsColor val outerBags then key:acc else acc)
+    (\acc key val -> if containsShinyGold val bagRules then key:acc else acc)
     []
-    outerBags
+    bagRules
 
-containsColor :: [(Color, Int)] -> OuterBags -> Bool
-containsColor [] _ = False
-containsColor ((currentColor,_):rest) outerBags =
+containsShinyGold :: [(Color, Int)] -> BagRules -> Bool
+containsShinyGold [] _ = False
+containsShinyGold ((currentColor,_):rest) bagRules =
   (currentColor == "shiny gold")
-  || containsColor lookupOtherBags outerBags
-  || containsColor rest outerBags
+  || containsShinyGold lookupOtherBags bagRules
+  || containsShinyGold rest bagRules
     where
-    lookupOtherBags = fromMaybe [] (M.lookup currentColor outerBags)
+    lookupOtherBags = fromMaybe [] (M.lookup currentColor bagRules)
 
-countNumOfContainedBags :: Color -> OuterBags -> Int
-countNumOfContainedBags color outerBags = foldl
-  (\acc (key, val) -> acc + val + val * countNumOfContainedBags key outerBags)
+countNumOfContainedBags :: Color -> BagRules -> Int
+countNumOfContainedBags color bagRules = foldl
+  (\acc (key, val) -> acc + val + val * countNumOfContainedBags key bagRules)
   0
   innerBags
     where
-    innerBags = fromMaybe [] (M.lookup color outerBags)
+    innerBags = fromMaybe [] (M.lookup color bagRules)
