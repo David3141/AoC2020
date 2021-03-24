@@ -59,10 +59,11 @@ readLines =
     <$> (readFile =<< getDataFileName "inputs/day08.txt")
   where
   parseLine :: String -> Command
-  parseLine ('a':'c':'c':' ':'+':(read -> num)) = Acc num
-  parseLine ('a':'c':'c':' ':'-':(read -> num)) = Acc (negate num)
-  parseLine ('j':'m':'p':' ':'+':(read -> num)) = Jmp num
-  parseLine ('j':'m':'p':' ':'-':(read -> num)) = Jmp (negate num)
-  parseLine ('n':'o':'p':' ':'+':(read -> num)) = Nop num
-  parseLine ('n':'o':'p':' ':'-':(read -> num)) = Nop (negate num)
+  parseLine ('a':'c':'c':' ':(readSigned -> num)) = Acc num
+  parseLine ('j':'m':'p':' ':(readSigned -> num)) = Jmp num
+  parseLine ('n':'o':'p':' ':(readSigned -> num)) = Nop num
 
+
+readSigned :: String -> Int
+readSigned ('+':x) = read x
+readSigned x = read x
