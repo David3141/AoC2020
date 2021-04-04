@@ -53,7 +53,7 @@ parseUpdate line = (read address, read value)
     [_, address] = splitOn "[" left
 
 
-updateMem :: Mask -> (Int, Int) -> Memory -> Memory
+updateMem :: Mask -> Update -> Memory -> Memory
 updateMem (orMask, andMask) (address, num) =
   M.alter (const $ Just (num .&. andMask .|. orMask)) address
 
