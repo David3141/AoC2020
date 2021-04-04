@@ -1,18 +1,17 @@
 module Day14 (part1, part2) where
 
 import Data.Char (digitToInt)
-import Data.List (isPrefixOf, stripPrefix)
+import Data.List (isPrefixOf, stripPrefix, subsequences, foldl')
 import Data.List.Split (splitOn)
 import qualified Data.IntMap.Strict as M
-import Data.Bits ((.|.), (.&.))
+import Data.Bits ((.|.), (.&.), bit, testBit)
 import Numeric (readInt)
 
 
 import Paths_advent_of_code
 
-
-type Mask = (Int, Int) -- two masks, one for OR (X = 0), one for AND (X = 1)
-type Update = (Int, Int) -- address + value
+type Mask = (Int, Int) -- first mask: only 'X' is 1, second mask: only '1' is 1
+type Update = (Int, Int) -- address, value
 type Memory = M.IntMap Int
 
 
@@ -31,19 +30,18 @@ input = lines <$> (readFile =<< getDataFileName "inputs/day14.txt")
 solve1 :: Memory -> Mask -> [String] -> Int
 solve1 mem _ [] = sum mem
 solve1 mem mask (line:rest)
-  | "mask =" `isPrefixOf` line = solve1 mem nextMask rest
+  | "mask = " `isPrefixOf` line = solve1 mem nextMask rest
   | otherwise = solve1 nextMem mask rest
   where
-    nextMask = parseMask line
+    nextMask = parseMask . drop (length "mask = ") $ line
     nextMem = updateMem mask (parseUpdate line) mem
 
 
 parseMask :: String -> Mask
-parseMask line = (orMask, andMask)
+parseMask maskStr = (maskX, mask1)
   where
-    (_, maskStr) = splitAt 7 line
-    orMask = readBin False maskStr
-    andMask = readBin True maskStr
+    maskX = readBin 'X' maskStr
+    mask1 = readBin '1' maskStr
 
 
 parseUpdate :: String -> Update
@@ -54,14 +52,23 @@ parseUpdate line = (read address, read value)
 
 
 updateMem :: Mask -> Update -> Memory -> Memory
-updateMem (orMask, andMask) (address, num) =
-  M.alter (const $ Just (num .&. andMask .|. orMask)) address
+updateMem (maskX, mask1) (address, num) =
+  M.alter (const $ Just (num .&. maskX .|. mask1)) address
 
 
-readBin :: Bool -> String -> Int
-readBin xAs1 = fst . head . readInt 2 (const True) charToInt
-  where
-    charToInt c
-      | c `elem` "01" = digitToInt c
-      | xAs1 = 1
-      | otherwise = 0
+readBin :: Char -> String -> Int
+readBin charThatIs1 = fst . head . readInt
+  2
+  (const True)
+  (\c -> if c == charThatIs1 then 1 else 0)
+
+
+readMask :: String -> Mask
+readMask line = (maskX, mask1)
+ where
+  maskX = readBin '1' line
+  mask1 = readBin 'X' line
+
+
+floatingMasks :: Int -> [Int]
+floatingMasks mask = map sum $ subsequences [bit b | b <- [0..35], testBit mask b]
