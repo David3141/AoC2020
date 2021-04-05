@@ -7,8 +7,8 @@ import qualified Data.IntMap.Strict as M
 type Memory = M.IntMap Int
 data GameState = GameState {
   memory :: Memory,
-  prevNum :: Int,
-  prevTurn :: Int
+  spokenNumber :: Int,
+  turn :: Int
 } deriving Show
 
 
@@ -26,20 +26,20 @@ part2 = return $ nthNum 30000000
 
 nthNum :: Int -> Int
 nthNum n =
-  prevNum . head . filter ((== n) . prevTurn) . iterate next $ initialGame
+  spokenNumber . head . filter ((== n) . turn) . iterate next $ initialGame
 
 
 initialGame :: GameState
 initialGame = GameState { memory   = M.fromList (zip (init input) [1 ..])
-                        , prevNum  = last input
-                        , prevTurn = length input
+                        , spokenNumber  = last input
+                        , turn = length input
                         }
 
 
 next :: GameState -> GameState
-next (GameState memory prevNum turn) = GameState newMemory nextNum (turn + 1)
+next (GameState memory spokenNumber turn) = GameState newMemory nextNum (turn + 1)
  where
-  newMemory = M.insert prevNum turn memory
-  nextNum   = case M.lookup prevNum memory of
+  newMemory = M.insert spokenNumber turn memory
+  nextNum   = case M.lookup spokenNumber memory of
     Just someTurn -> turn - someTurn
     Nothing       -> 0
