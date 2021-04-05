@@ -21,11 +21,18 @@ run tick =
   length
     .   filter (== Occupied)
     .   M.elems
-    .   fst
-    .   head
-    .   dropWhile (uncurry (/=))
-    .   (zip <*> tail)
-    .   iterate tick
+    .   repeatUntilNoChange tick
+
+
+repeatUntilNoChange :: Eq a => (a -> a) -> a -> a
+repeatUntilNoChange f x =
+  let x' = f x in if x' == x then x else repeatUntilNoChange f x'
+
+
+-- Unused, kept only as alternative possible implementation
+repeatUntilNoChange2 :: Eq a => (a -> a) -> a -> a
+repeatUntilNoChange2 f =
+  fst . head . dropWhile (uncurry (/=)) . (zip <*> tail) . iterate f
 
 
 input :: IO Layout
@@ -36,13 +43,14 @@ input =
     .   lines
     <$> (readFile =<< getDataFileName "inputs/day11.txt")
  where
-  parseLine (y, line) = map
-    (\(x, seat) -> (,) (x, y) $ case seat of
+  parseLine (y, line) = zipWith
+    (\x seat -> (,) (x, y) $ case seat of
       '#' -> Occupied
       '.' -> Floor
       'L' -> Empty
     )
-    (zip [0 ..] line)
+    [0 ..]
+    line
 
 
 tick1 :: Layout -> Layout
